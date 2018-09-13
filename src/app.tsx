@@ -7,12 +7,12 @@ import { isScrollAtBottom } from './utils';
 export interface AppState {
   idList: number[];
   itemMap: { [propName: number]: IItem };
-  isLoadingNextPage: boolean;
   itemCursor: number;
   loadedCount: number;
 }
 
 const idMap: { [propName: number]: boolean} = {};
+let isLoadingNextPage = false;
 
 class App extends React.Component<any, AppState> {
   constructor(props: any) {
@@ -20,7 +20,6 @@ class App extends React.Component<any, AppState> {
     this.state = {
       idList: [],
       itemMap: {},
-      isLoadingNextPage: false,
       itemCursor: 0,
       loadedCount: 0,
     };
@@ -49,9 +48,9 @@ class App extends React.Component<any, AppState> {
   }
 
   private async getNextPage() {
-    const { idList: currentIdList, isLoadingNextPage, itemCursor } = this.state;
+    const { idList: currentIdList, itemCursor } = this.state;
     if (isLoadingNextPage) return;
-    await this.setState({ isLoadingNextPage: true });
+    isLoadingNextPage = true;
     const page = Math.floor(currentIdList.length / pageSize) + 1;
     const rawIdList = await hackerNews.getNewStories(page);
     const idList = rawIdList.filter(id => {
@@ -60,7 +59,8 @@ class App extends React.Component<any, AppState> {
       return !isDuplicate;
     });
     const newIdList = currentIdList.concat(idList);
-    await this.setState({ idList: newIdList, isLoadingNextPage: false });
+    await this.setState({ idList: newIdList });
+    isLoadingNextPage = false;
     const idSlice = newIdList.slice(itemCursor, newIdList.length);
     await this.setState({ itemCursor: newIdList.length });
     idSlice.forEach(id => this.getItem(id));
