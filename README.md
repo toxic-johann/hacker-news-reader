@@ -1,6 +1,8 @@
 # hacker-news-reader
 
-A demo for hacker news reader.
+A demo for hacker news reader.\
+
+You can see the demo on http://toxic-johann.github.io/hacker-news-reader
 
 ## How to run the project
 
