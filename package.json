@@ -24,5 +24,6 @@
     "@types/react-dom": "^16.0.7",
     "hacker-news-api-types": "^1.0.1",
     "typescript": "^3.0.3"
-  }
+  },
+  "homepage" : "http://toxic-johann.github.io/hacker-news-reader"
 }
