@@ -9,6 +9,7 @@ export interface AppState {
   itemMap: { [propName: number]: IItem };
   isLoadingNextPage: boolean;
   itemCursor: number;
+  loadedCount: number;
 }
 
 const idMap: { [propName: number]: boolean} = {};
@@ -21,11 +22,12 @@ class App extends React.Component<any, AppState> {
       itemMap: {},
       isLoadingNextPage: false,
       itemCursor: 0,
+      loadedCount: 0,
     };
     window.addEventListener('scroll', () => {
       if (isScrollAtBottom(1.25)) {
-        const { itemCursor, idList } = this.state;
-        if (idList.length && itemCursor + 5 >= idList.length) {
+        const { loadedCount, idList } = this.state;
+        if (idList.length && loadedCount + 5 >= idList.length) {
           this.getNextPage();
         }
       }
@@ -66,9 +68,9 @@ class App extends React.Component<any, AppState> {
 
   private async getItem(id: number) {
     const item = await hackerNews.getItem(id);
-    const { itemMap } = this.state;
+    const { itemMap, loadedCount } = this.state;
     itemMap[id] = item;
-    await this.setState({ itemMap });
+    await this.setState({ itemMap, loadedCount: loadedCount + 1 });
   }
 }
 
