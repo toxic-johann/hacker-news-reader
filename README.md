@@ -12,6 +12,8 @@ You can see the demo on http://toxic-johann.github.io/hacker-news-reader
 
 ## How to develop the project
 
-If you want to develop, run with `npm run dev`.
+If you want to develop, run with `npm start`.
 
-After developing, you can run with `npm run build`.
+After developing, you can run with `npm run build` to build the static file.
+
+You can deploy to the hackernews github.io with `npm run deploy`.
