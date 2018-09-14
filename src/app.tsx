@@ -23,6 +23,8 @@ class App extends React.Component<any, AppState> {
       itemCursor: 0,
       loadedCount: 0,
     };
+    // @ts-ignore:
+    window.app = this;
     window.addEventListener('scroll', () => {
       if (isScrollAtBottom(1.25)) {
         const { loadedCount, idList } = this.state;

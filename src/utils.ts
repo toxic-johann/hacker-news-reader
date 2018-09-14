@@ -1,23 +1,26 @@
 import { HackerNews } from './hacker-news';
 import { IItem } from "hacker-news-api-types";
 
-const MAX_REQUEST_NUMBER = 6;
+const MAX_REQUEST_NUMBER = 3;
 
 class RequestController {
-  list: Function[];
+  microTasks: Function[];
+  macroTasks: Function[];
   requestCount: number;
   loadedCount: number;
 
   constructor() {
-    this.list = [];
+    this.microTasks = [];
+    this.macroTasks = [];
     this.loadedCount = 0;
     this.requestCount = 0;
     this.poll();
   }
 
-  add(fn: Function, isPush: boolean): Promise<any> {
+  add(fn: Function, isMicro: boolean): Promise<any> {
+    const { macroTasks, microTasks } = this;
     return new Promise((resolve, reject) => {
-      this.list[isPush ? 'push' : 'unshift'](this.getRunner(fn, resolve, reject));
+      (isMicro ? microTasks : macroTasks).push(this.getRunner(fn, resolve, reject));
     });
   }
 
@@ -34,24 +37,18 @@ class RequestController {
     };
   }
 
-  push(fn: Function): Promise<any> {
-    return this.add(fn, true);
-  }
-
   async poll(): Promise<void> {
-    const { list, requestCount, loadedCount } = this;
-    if (list.length === 0 || requestCount > loadedCount + MAX_REQUEST_NUMBER) {
+    const { microTasks, macroTasks, requestCount, loadedCount } = this;
+    const unstartTasksLength = microTasks.length + macroTasks.length;
+    if (unstartTasksLength === 0 || requestCount > loadedCount + MAX_REQUEST_NUMBER) {
       await sleep();
       return this.poll();
     }
+    const list = microTasks.length ? microTasks : macroTasks;
     const slice = list.splice(0, Math.min(MAX_REQUEST_NUMBER - (requestCount - loadedCount), list.length));
     const tasks: Promise<any>[] = slice.map(fn => fn());
     await Promise.race(tasks);
     return this.poll();
-  }
-
-  unshift(fn: Function) {
-    return this.add(fn, false);
   }
 }
 
@@ -72,21 +69,40 @@ export function isScrollAtBottom(bias: number = 1) {
  * A decorator to let user use cache in localStorage first
  * @param {string} prefix 
  */
-export function cacheFirst({prefix, needUnshift = false }: { prefix: string, needUnshift?: boolean }) {
+export function cacheFirst(prefix: string) {
   return function(target: HackerNews, property: string, descriptor: PropertyDescriptor) {
     const {value: originFn} = descriptor;
     const fn = (id: number) => {
       const key = prefix + id.toString();
       const rawCacheItem = localStorage.getItem(key);
-      const asyncResponse = requestController[(!needUnshift || rawCacheItem) ? 'push' : 'unshift'](() => originFn.bind(target)(id)
-        .then((asyncItem: IItem) => {
-          localStorage.setItem(key, JSON.stringify(asyncItem));
-          return asyncItem;
-        })
-      );
+      const fn = () => originFn.bind(target)(id)
+      .then((asyncItem: IItem) => {
+        localStorage.setItem(key, JSON.stringify(asyncItem));
+        return asyncItem;
+      });
+      const asyncResponse = requestController.add(fn, !rawCacheItem);
       return rawCacheItem
         ? Promise.resolve(JSON.parse(rawCacheItem))
         : asyncResponse;
+    }
+    descriptor.value = fn;
+  }
+}
+
+export function networkFirst(prefix: string) {
+  return function(target: HackerNews, property: string, descriptor: PropertyDescriptor) {
+    const {value: originFn} = descriptor;
+    const fn = (id: number) => {
+      const key = prefix + id.toString();
+      return originFn.bind(target)(id)
+        .then((asyncItem: IItem) => {
+          localStorage.setItem(key, JSON.stringify(asyncItem));
+          return asyncItem;
+        }).catch(() => {
+          const rawCacheItem = localStorage.getItem(key);
+          if (!rawCacheItem) throw new Error('No network and no cache');
+          return JSON.parse(rawCacheItem);
+        });
     }
     descriptor.value = fn;
   }
