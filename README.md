@@ -1,5 +1,7 @@
 # hacker-news-reader
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/toxic-johann/hacker-news-reader.svg)](https://greenkeeper.io/)
+
 A demo for hacker news reader.\
 
 You can see the demo on http://toxic-johann.github.io/hacker-news-reader
